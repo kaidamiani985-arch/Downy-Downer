@@ -290,7 +290,7 @@ export function SettingsModal() {
           <div className="settings-row">
             <div className="settings-label">
               <strong>Sound effects</strong>
-              <span>Coin pickups, countdowns, and the inevitable thud.</span>
+              <span>Interface sounds and gentle feedback.</span>
             </div>
             <Toggle
               checked={settings.soundEnabled}

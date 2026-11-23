@@ -155,7 +155,7 @@ export function SnakeGame({ onClose }: { onClose: () => void }) {
 
       // If frames are consistently slow (older Intel GPUs, software rendering),
       // gradually drop the render scale before touching gameplay speed.
-      if (phaseRef.current === 'playing' && rawDt > 0 && rawDt < 120) {
+      if (phaseRef.current === 'playing' && rawDt > 0 && rawDt < 250) {
         frameAccum += rawDt
         frameSamples += 1
         if (frameSamples >= 90) {
