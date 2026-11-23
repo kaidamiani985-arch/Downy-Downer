@@ -221,6 +221,12 @@ DMG="$3"
 PID="$4"
 MOUNT="$5"
 
+LOG="$HOME/Library/Logs/DownyUpdater.log"
+mkdir -p "$HOME/Library/Logs" 2>/dev/null || true
+exec >>"$LOG" 2>&1
+echo "[$(date)] Installing Downy update"
+echo "app=$APP new=$NEW dmg=$DMG"
+
 # Wait for the running app to close.
 while kill -0 "$PID" 2>/dev/null; do
   sleep 0.2
@@ -231,10 +237,16 @@ BACKUP="\${APP}.downy-old"
 rm -rf "$BACKUP"
 
 if [ -d "$APP" ]; then
-  mv "$APP" "$BACKUP" || { rm -rf "$MOUNT"; exit 1; }
+  if ! mv "$APP" "$BACKUP"; then
+    echo "Could not move the old app aside"
+    /usr/bin/hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
+    /usr/bin/open "$DMG"
+    exit 1
+  fi
 fi
 
 if /usr/bin/ditto "$NEW" "$APP"; then
+  echo "Copy succeeded"
   /usr/bin/xattr -dr com.apple.quarantine "$APP" >/dev/null 2>&1 || true
   rm -rf "$BACKUP"
   rm -rf "$(dirname "$NEW")"
@@ -242,9 +254,11 @@ if /usr/bin/ditto "$NEW" "$APP"; then
   /usr/bin/hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
   /usr/bin/open "$APP"
 else
+  echo "Copy failed; restoring the old app and opening the DMG"
   rm -rf "$APP"
   mv "$BACKUP" "$APP"
   /usr/bin/open "$APP"
+  /usr/bin/open "$DMG"
 fi
 
 rm -rf "$MOUNT"
