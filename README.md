@@ -30,7 +30,7 @@ Requires macOS 12 Monterey or newer. The DMG is universal: native Intel and Appl
   - 10 videos → 25 tokens
 - Partial playlist selections cost the normal 5 tokens per video.
 - Failed or cancelled downloads refund automatically.
-- You start with 0 tokens. Open the wallet (top-right), or try to download without enough tokens, to play Token Snake. Each coin goes straight into your wallet.
+- You start with 0 tokens. The wallet in the top-right shows your balance, and the download cost is always shown before you start.
 - If YouTube asks you to sign in, open **Settings → Under the hood → Browser cookies** and choose your browser.
 - If YouTube changes and downloads stop working, open **Settings → Under the hood → Update yt-dlp**.
 - To start over, open **Settings → Reset save**. This clears the queue and resets tokens to 0 while keeping your settings.
