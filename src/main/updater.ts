@@ -250,8 +250,8 @@ if /usr/bin/ditto "$NEW" "$APP"; then
   /usr/bin/xattr -dr com.apple.quarantine "$APP" >/dev/null 2>&1 || true
   rm -rf "$BACKUP"
   rm -rf "$(dirname "$NEW")"
-  rm -f "$DMG"
   /usr/bin/hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
+  rm -f "$DMG"
   /usr/bin/open "$APP"
 else
   echo "Copy failed; restoring the old app and opening the DMG"
