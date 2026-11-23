@@ -1,0 +1,39 @@
+appId: com.kaidamiani.downydownloader
+productName: Downy Downloader
+copyright: Copyright © 2026 Kai Damiani
+directories:
+  output: release/dmg-build
+  buildResources: build
+npmRebuild: false
+mac:
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  icon: build/icon.icns
+  minimumSystemVersion: "12.0"
+  extendInfo:
+    NSHumanReadableCopyright: "Copyright © 2026 Kai Damiani"
+    NSHighResolutionCapable: true
+dmg:
+  title: "Downy Downloader ${version}"
+  icon: build/icon.icns
+  background: build/dmg-background.png
+  iconSize: 96
+  window:
+    width: 660
+    height: 420
+  contents:
+    - x: 165
+      y: 195
+      type: file
+    - x: 495
+      y: 195
+      type: link
+      path: /Applications
+    - x: 330
+      y: 335
+      type: file
+      path: build/FIRST LAUNCH.txt
+      name: FIRST LAUNCH.txt
+  artifactName: "Downy-Downloader-${version}-universal.dmg"
+publish: null

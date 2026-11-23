@@ -1,0 +1,37 @@
+DOWNY DOWNLOADER — FIRST LAUNCH
+===============================
+
+1. Drag "Downy Downloader" into the Applications folder.
+2. Open your Applications folder and double-click Downy Downloader.
+3. macOS may show "Apple could not verify..." because this build is ad-hoc signed
+   rather than notarized with a paid Apple Developer certificate.
+
+   If that happens:
+   • macOS 15 Sequoia or newer:
+     Open System Settings → Privacy & Security, scroll down, and click
+     "Open Anyway" next to Downy Downloader. Confirm, then open it again.
+   • macOS 14 Sonoma or older:
+     Right-click (or Control-click) Downy Downloader and choose Open.
+     Confirm the dialog.
+
+   You only need to do this once. After the first launch, the app opens normally.
+
+INSTALL NOTES
+-------------
+• This is a universal app: it runs natively on both Intel and Apple Silicon Macs.
+• Requires macOS 12 Monterey or newer.
+• No Python, Homebrew, ffmpeg, or yt-dlp installation is required. Everything is
+  bundled inside the app.
+• The app keeps its tools in ~/Library/Application Support/Downy Downloader.
+• If YouTube changes something, open Settings → Advanced and click
+  "Update yt-dlp". No new app download needed.
+
+TOKENS
+------
+• You start with 0 download tokens.
+• Each normal download costs 5 tokens.
+• Earn tokens by playing the snake game. Each coin eaten = 1 token.
+• Each coin goes straight into your wallet.
+• A complete playlist costs ceil(5 × number of videos ÷ 2).
+  Examples: 3 videos = 8 tokens, 10 videos = 25 tokens.
+• Failed or cancelled downloads refund automatically.

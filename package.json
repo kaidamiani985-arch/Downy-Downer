@@ -1,0 +1,42 @@
+{
+  "name": "downy-downloader",
+  "version": "1.0.0",
+  "description": "A cozy macOS YouTube downloader with a snake-powered token economy.",
+  "main": "./out/main/index.js",
+  "author": "Kai Damiani",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "fetch:binaries": "node scripts/fetch-binaries.mjs",
+    "make:icons": "node scripts/make-icons.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "dist:dir": "npm run fetch:binaries && npm run make:icons && npm run build && electron-builder --mac dir --universal --config electron-builder.yml",
+    "dist:mac": "npm run fetch:binaries && npm run make:icons && npm run build && node scripts/package-mac.mjs"
+  },
+  "devDependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/dm-mono": "^5.3.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "43.8.12",
+    "electron-builder": "26.18.0",
+    "electron-vite": "^6.0.0",
+    "lucide-react": "^1.78.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
+    "zustand": "^5.1.0"
+  }
+}

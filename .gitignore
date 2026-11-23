@@ -1,0 +1,11 @@
+node_modules/
+out/
+release/
+dist/
+vendor/bin/*
+!vendor/bin/.gitkeep
+*.log
+*.tsbuildinfo
+.DS_Store
+.opencode/
+build/icon.iconset/
