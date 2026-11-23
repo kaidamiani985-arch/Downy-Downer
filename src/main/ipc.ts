@@ -11,6 +11,7 @@ import type {
   StartResult,
   UpdateCheck
 } from '../shared/types'
+import { checkForAppUpdate, installAppUpdate } from './updater'
 import type { BinaryManager } from './binaries'
 import type { DownloadManager } from './downloads'
 import type { Store } from './store'
@@ -249,6 +250,21 @@ export function registerIpc(context: IpcContext): void {
     store.updateSettings({ lastYtdlpCheck: Date.now() })
     broadcastState()
     return result
+  })
+
+  ipcMainHandle(CHANNELS.checkAppUpdate, (_event, force: unknown) => {
+    return checkForAppUpdate(force === true)
+  })
+
+  ipcMainHandle(CHANNELS.installAppUpdate, async (event) => {
+    if (downloads.getActive()) {
+      return { ok: false, message: 'Finish or stop the active download before updating Downy.' }
+    }
+    return installAppUpdate((progress) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send(CHANNELS.appUpdateProgress, progress)
+      }
+    })
   })
 }
 

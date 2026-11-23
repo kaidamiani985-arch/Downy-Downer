@@ -23,8 +23,14 @@ INSTALL NOTES
 • No Python, Homebrew, ffmpeg, or yt-dlp installation is required. Everything is
   bundled inside the app.
 • The app keeps its tools in ~/Library/Application Support/Downy Downloader.
-• If YouTube changes something, open Settings → Advanced and click
+• If YouTube changes something, open Settings → Under the hood and click
   "Update yt-dlp". No new app download needed.
+
+UPDATES
+-------
+• Open Settings → Updates and click "Download & install" to get a new version
+  of Downy. The app restarts by itself when it is ready.
+• You can also use Downy Downloader → Check for Updates… in the menu bar.
 
 TOKENS
 ------

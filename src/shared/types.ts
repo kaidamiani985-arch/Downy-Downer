@@ -181,6 +181,28 @@ export interface UpdateCheck {
   message?: string
 }
 
+export interface AppUpdateCheck {
+  ok: boolean
+  currentVersion: string
+  latestVersion?: string
+  updateAvailable?: boolean
+  downloadUrl?: string | null
+  releaseUrl?: string
+  publishedAt?: string
+  message?: string
+}
+
+export interface AppUpdateProgress {
+  phase: 'download' | 'install' | 'restart'
+  percent: number
+  message: string
+}
+
+export interface AppUpdateResult {
+  ok: boolean
+  message?: string
+}
+
 export interface ToastPayload {
   type: 'info' | 'success' | 'error'
   message: string

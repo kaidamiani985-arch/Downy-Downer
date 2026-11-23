@@ -1,6 +1,6 @@
 {
   "name": "downy-downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A cozy macOS YouTube downloader with a snake-powered token economy.",
   "main": "./out/main/index.js",
   "author": "Kai Damiani",

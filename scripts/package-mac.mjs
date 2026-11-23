@@ -10,7 +10,8 @@ const releaseDir = path.join(root, 'release')
 const builtApp = path.join(releaseDir, 'mac-universal', 'Downy Downloader.app')
 const finalApp = path.join(releaseDir, 'Downy Downloader.app')
 const dmgOutputDir = path.join(releaseDir, 'dmg-build')
-const finalDmg = path.join(releaseDir, 'Downy-Downloader-1.0.0-universal.dmg')
+const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version
+const finalDmg = path.join(releaseDir, `Downy-Downloader-${packageVersion}-universal.dmg`)
 
 function log(message) {
   process.stdout.write(`[package] ${message}\n`)

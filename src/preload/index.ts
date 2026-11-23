@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { CHANNELS } from '../shared/api'
 import type { DownyApi } from '../shared/api'
-import type { AppSnapshot, ProgressUpdate, ToastPayload } from '../shared/types'
+import type { AppSnapshot, AppUpdateProgress, ProgressUpdate, ToastPayload } from '../shared/types'
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
   const listener = (_event: Electron.IpcRendererEvent, payload: T) => callback(payload)
@@ -27,9 +27,12 @@ const api: DownyApi = {
   getTools: () => ipcRenderer.invoke(CHANNELS.getTools),
   checkYtdlpUpdate: () => ipcRenderer.invoke(CHANNELS.checkYtdlpUpdate),
   updateYtdlp: () => ipcRenderer.invoke(CHANNELS.updateYtdlp),
+  checkAppUpdate: (force?: boolean) => ipcRenderer.invoke(CHANNELS.checkAppUpdate, force === true),
+  installAppUpdate: () => ipcRenderer.invoke(CHANNELS.installAppUpdate),
   onState: (callback) => subscribe<AppSnapshot>(CHANNELS.stateChanged, callback),
   onProgress: (callback) => subscribe<ProgressUpdate>(CHANNELS.progressChanged, callback),
   onToast: (callback) => subscribe<ToastPayload>(CHANNELS.toast, callback),
+  onAppUpdateProgress: (callback) => subscribe<AppUpdateProgress>(CHANNELS.appUpdateProgress, callback),
   onOpenSettings: (callback) => {
     const listener = () => callback()
     ipcRenderer.on(CHANNELS.openSettings, listener)

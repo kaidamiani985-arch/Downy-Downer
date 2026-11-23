@@ -8,6 +8,7 @@ import { BinaryManager } from './binaries'
 import { DownloadManager } from './downloads'
 import { registerIpc } from './ipc'
 import { Store } from './store'
+import { checkForAppUpdate } from './updater'
 import { YtDlpService } from './ytdlp'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
@@ -80,7 +81,7 @@ async function bootstrap(): Promise<void> {
     version: app.getVersion(),
     copyright: 'Copyright © 2026 Kai Damiani',
     credits:
-      'A cozy YouTube downloader with a snake-powered token economy.\n\nBundled tools: yt-dlp, Deno, FFmpeg and FFprobe. See the licenses folder for their notices.'
+      'A small, local YouTube downloader with a token wallet.\n\nBundled tools: yt-dlp, Deno, FFmpeg and FFprobe. See the licenses folder for their notices.'
   })
 
   if (isDev && app.dock) {
@@ -151,6 +152,12 @@ async function bootstrap(): Promise<void> {
   setTimeout(() => {
     void maybeAutoCheckYtdlp(binaryManager, toast, broadcastState)
   }, 5_000)
+
+  if (app.isPackaged) {
+    setTimeout(() => {
+      void maybeAutoCheckAppUpdate(toast)
+    }, 9_000)
+  }
 }
 
 function createWindow(): BrowserWindow {
@@ -253,6 +260,12 @@ function buildMenu(): void {
       label: app.name,
       submenu: [
         { role: 'about' },
+        {
+          label: 'Check for Updates…',
+          click: () => {
+            void checkForUpdatesFromMenu(openSettings)
+          }
+        },
         { type: 'separator' },
         {
           label: 'Settings…',
@@ -313,6 +326,60 @@ function buildMenu(): void {
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+async function checkForUpdatesFromMenu(openSettings: () => void): Promise<void> {
+  mainWindow?.show()
+  mainWindow?.focus()
+
+  const result = await checkForAppUpdate(true)
+  if (!result.ok) {
+    await showMessage({
+      type: 'warning',
+      title: 'Check for updates',
+      message: 'Could not check for updates.',
+      detail: result.message ?? 'Try again in a moment.'
+    })
+    return
+  }
+
+  if (!result.updateAvailable) {
+    await showMessage({
+      type: 'info',
+      title: 'Check for updates',
+      message: "You're up to date.",
+      detail: `Downy ${app.getVersion()} is the latest version.`
+    })
+    return
+  }
+
+  const response = await showMessage({
+    type: 'info',
+    title: 'Update available',
+    message: `Downy ${result.latestVersion} is available.`,
+    detail: 'Open Settings → Updates to download and install it.',
+    buttons: ['Open Settings', 'Later'],
+    defaultId: 0,
+    cancelId: 1
+  })
+
+  if (response === 0) openSettings()
+}
+
+function showMessage(options: Electron.MessageBoxOptions): Promise<number> {
+  return mainWindow && !mainWindow.isDestroyed()
+    ? dialog.showMessageBox(mainWindow, options).then((result) => result.response)
+    : dialog.showMessageBox(options).then((result) => result.response)
+}
+
+async function maybeAutoCheckAppUpdate(toast: (payload: ToastPayload) => void): Promise<void> {
+  const result = await checkForAppUpdate(false)
+  if (result.ok && result.updateAvailable && result.latestVersion) {
+    toast({
+      type: 'info',
+      message: `Downy ${result.latestVersion} is available. Open Settings → Updates to install it.`
+    })
+  }
 }
 
 async function maybeAutoCheckYtdlp(

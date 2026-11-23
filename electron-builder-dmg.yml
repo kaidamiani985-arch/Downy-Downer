@@ -15,7 +15,7 @@ mac:
     NSHumanReadableCopyright: "Copyright © 2026 Kai Damiani"
     NSHighResolutionCapable: true
 dmg:
-  title: "Downy Downloader ${version}"
+  title: "Downy ${version}"
   icon: build/icon.icns
   background: build/dmg-background.png
   iconSize: 96

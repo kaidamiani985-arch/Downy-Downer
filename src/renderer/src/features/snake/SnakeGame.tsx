@@ -115,18 +115,58 @@ export function SnakeGame({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext('2d', { alpha: false })
     if (!context) return
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    canvas.width = BOARD_WIDTH * dpr
-    canvas.height = BOARD_HEIGHT * dpr
-    context.setTransform(dpr, 0, 0, dpr, 0, 0)
+    let renderScale = Math.min(window.devicePixelRatio || 1, 2)
+    let grid: HTMLCanvasElement | null = null
+    let frameAccum = 0
+    let frameSamples = 0
+    let lastPhase: Phase | null = null
+    let lastParticleCount = 0
+
+    const buildGrid = (scale: number): HTMLCanvasElement => {
+      const layer = document.createElement('canvas')
+      layer.width = Math.round(BOARD_WIDTH * scale)
+      layer.height = Math.round(BOARD_HEIGHT * scale)
+      const layerContext = layer.getContext('2d')
+      if (layerContext) {
+        layerContext.setTransform(scale, 0, 0, scale, 0, 0)
+        drawGrid(layerContext)
+      }
+      return layer
+    }
+
+    const resize = () => {
+      canvas.width = Math.round(BOARD_WIDTH * renderScale)
+      canvas.height = Math.round(BOARD_HEIGHT * renderScale)
+      context.setTransform(renderScale, 0, 0, renderScale, 0, 0)
+      grid = buildGrid(renderScale)
+      lastPhase = null
+    }
+
+    resize()
 
     const loop = (now: number) => {
       const activeEngine = engineRef.current!
-      const dt = Math.min(32, now - (lastFrameRef.current || now))
+      const rawDt = now - (lastFrameRef.current || now)
+      const dt = Math.min(32, rawDt)
       lastFrameRef.current = now
+
+      // If frames are consistently slow (older Intel GPUs, software rendering),
+      // gradually drop the render scale before touching gameplay speed.
+      if (phaseRef.current === 'playing' && rawDt > 0 && rawDt < 120) {
+        frameAccum += rawDt
+        frameSamples += 1
+        if (frameSamples >= 90) {
+          if (frameAccum / frameSamples > 22 && renderScale > 1.01) {
+            renderScale = Math.max(1, renderScale - 0.5)
+            resize()
+          }
+          frameAccum = 0
+          frameSamples = 0
+        }
+      }
 
       if (phaseRef.current === 'countdown' && now >= countdownEndRef.current) {
         updatePhase('playing')
@@ -158,16 +198,31 @@ export function SnakeGame({ onClose }: { onClose: () => void }) {
       }
 
       updateParticles(particlesRef.current, dt)
-      drawBoard(
-        context,
-        activeEngine,
-        prevSnakeRef.current,
-        prevDirectionRef.current,
-        particlesRef.current,
-        now,
-        phaseRef.current,
-        lastStepRef.current
-      )
+
+      const phaseNow = phaseRef.current
+      const needsDraw =
+        phaseNow === 'playing' ||
+        phaseNow === 'countdown' ||
+        particlesRef.current.length > 0 ||
+        lastParticleCount > 0 ||
+        phaseNow !== lastPhase
+
+      if (needsDraw && grid) {
+        drawBoard(
+          context,
+          grid,
+          activeEngine,
+          prevSnakeRef.current,
+          prevDirectionRef.current,
+          particlesRef.current,
+          now,
+          phaseNow,
+          lastStepRef.current
+        )
+      }
+
+      lastPhase = phaseNow
+      lastParticleCount = particlesRef.current.length
       animationRef.current = requestAnimationFrame(loop)
     }
 
@@ -331,17 +386,7 @@ function updateParticles(particles: Particle[], dt: number): void {
   }
 }
 
-function drawBoard(
-  ctx: CanvasRenderingContext2D,
-  engine: SnakeEngine,
-  prevSnake: Point[],
-  prevDirection: Direction,
-  particles: Particle[],
-  now: number,
-  phase: Phase,
-  lastStep: number
-): void {
-  ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT)
+function drawGrid(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = '#080808'
   ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT)
 
@@ -359,6 +404,20 @@ function drawBoard(
     ctx.lineTo(BOARD_WIDTH, py)
   }
   ctx.stroke()
+}
+
+function drawBoard(
+  ctx: CanvasRenderingContext2D,
+  grid: HTMLCanvasElement,
+  engine: SnakeEngine,
+  prevSnake: Point[],
+  prevDirection: Direction,
+  particles: Particle[],
+  now: number,
+  phase: Phase,
+  lastStep: number
+): void {
+  ctx.drawImage(grid, 0, 0, BOARD_WIDTH, BOARD_HEIGHT)
 
   for (const obstacle of engine.obstacles) {
     drawObstacle(ctx, obstacle.x * CELL, obstacle.y * CELL)

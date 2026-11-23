@@ -10,7 +10,10 @@ import type {
   UpdateCheck,
   WalletSnapshot,
   ActionResult,
-  ResetSaveResult
+  ResetSaveResult,
+  AppUpdateCheck,
+  AppUpdateProgress,
+  AppUpdateResult
 } from './types'
 
 export interface DownyApi {
@@ -31,9 +34,12 @@ export interface DownyApi {
   getTools(): Promise<ToolsInfo>
   checkYtdlpUpdate(): Promise<UpdateCheck>
   updateYtdlp(): Promise<UpdateCheck>
+  checkAppUpdate(force?: boolean): Promise<AppUpdateCheck>
+  installAppUpdate(): Promise<AppUpdateResult>
   onState(callback: (state: AppSnapshot) => void): () => void
   onProgress(callback: (progress: ProgressUpdate) => void): () => void
   onToast(callback: (toast: ToastPayload) => void): () => void
+  onAppUpdateProgress(callback: (progress: AppUpdateProgress) => void): () => void
   onOpenSettings(callback: () => void): () => void
 }
 
@@ -55,6 +61,9 @@ export const CHANNELS = {
   getTools: 'tools:get',
   checkYtdlpUpdate: 'tools:check-update',
   updateYtdlp: 'tools:update',
+  checkAppUpdate: 'app:check-update',
+  installAppUpdate: 'app:install-update',
+  appUpdateProgress: 'app:update-progress',
   stateChanged: 'state:changed',
   progressChanged: 'progress:changed',
   toast: 'toast:message',

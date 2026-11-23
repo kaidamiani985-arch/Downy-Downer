@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Download,
   ExternalLink,
   FolderOpen,
   Info,
@@ -11,7 +12,7 @@ import {
   Terminal,
   Wrench
 } from 'lucide-react'
-import type { ToolsInfo, UpdateCheck } from '@shared/types'
+import type { AppUpdateCheck, AppUpdateProgress, ToolsInfo, UpdateCheck } from '@shared/types'
 import { formatTokenCount } from '@shared/youtube'
 import { useAppStore } from '../store'
 import {
@@ -36,6 +37,10 @@ export function SettingsModal() {
   const [toolAction, setToolAction] = useState<'check' | 'update' | null>(null)
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
+  const [appUpdate, setAppUpdate] = useState<AppUpdateCheck | null>(null)
+  const [appChecking, setAppChecking] = useState(false)
+  const [appInstalling, setAppInstalling] = useState(false)
+  const [appProgress, setAppProgress] = useState<AppUpdateProgress | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -54,6 +59,26 @@ export function SettingsModal() {
       })
     return () => {
       active = false
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    window.downy
+      .checkAppUpdate(false)
+      .then((result) => {
+        if (active) setAppUpdate(result)
+      })
+      .catch(() => undefined)
+
+    const unsubscribe = window.downy.onAppUpdateProgress((progress) => {
+      if (active) setAppProgress(progress)
+    })
+
+    return () => {
+      active = false
+      unsubscribe()
     }
   }, [open])
 
@@ -112,6 +137,41 @@ export function SettingsModal() {
       addToast('error', error instanceof Error ? error.message : 'Could not reset your save.')
     } finally {
       setResetting(false)
+    }
+  }
+
+  const checkAppUpdate = async () => {
+    setAppChecking(true)
+    setAppProgress(null)
+    try {
+      setAppUpdate(await window.downy.checkAppUpdate(true))
+    } catch (error) {
+      setAppUpdate({
+        ok: false,
+        currentVersion: snapshot.version,
+        message: error instanceof Error ? error.message : 'Could not check for updates.'
+      })
+    } finally {
+      setAppChecking(false)
+    }
+  }
+
+  const installUpdate = async () => {
+    setAppInstalling(true)
+    setAppProgress({ phase: 'download', percent: 0, message: 'Starting the update…' })
+    try {
+      const result = await window.downy.installAppUpdate()
+      if (!result.ok) {
+        setAppInstalling(false)
+        setAppProgress(null)
+        addToast('error', result.message ?? 'The update could not be installed.')
+      } else {
+        addToast('info', 'Restarting to finish the update…')
+      }
+    } catch (error) {
+      setAppInstalling(false)
+      setAppProgress(null)
+      addToast('error', error instanceof Error ? error.message : 'The update could not be installed.')
     }
   }
 
@@ -292,6 +352,64 @@ export function SettingsModal() {
 
         <section className="settings-section">
           <div className="settings-section-title">
+            <span>Updates</span>
+            <span className="settings-hint">Keep Downy current.</span>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              <strong>Downy Downloader</strong>
+              <span>
+                Version {snapshot.version}
+                {appUpdate?.updateAvailable && appUpdate.latestVersion
+                  ? ` · ${appUpdate.latestVersion} available`
+                  : ''}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-small"
+              onClick={checkAppUpdate}
+              disabled={appChecking || appInstalling}
+            >
+              {appChecking ? <Spinner size={14} /> : <RefreshCw size={14} />}
+              Check
+            </button>
+          </div>
+
+          {appUpdate?.ok && appUpdate.updateAvailable && (
+            <div className="update-card">
+              <div className="update-card-copy">
+                <strong>Version {appUpdate.latestVersion} is ready</strong>
+                <span>
+                  {appProgress?.message ?? 'Download it here and Downy will restart when it is ready.'}
+                </span>
+                {appProgress?.phase === 'download' && (
+                  <div className="update-progress">
+                    <span style={{ width: `${Math.max(3, appProgress.percent)}%` }} />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-gold btn-small"
+                onClick={installUpdate}
+                disabled={appInstalling}
+              >
+                {appInstalling ? <Spinner size={14} /> : <Download size={14} />}
+                {appInstalling ? 'Installing…' : 'Download & install'}
+              </button>
+            </div>
+          )}
+
+          {appUpdate && !appUpdate.ok && <div className="tool-message">{appUpdate.message}</div>}
+          {appUpdate?.ok && !appUpdate.updateAvailable && (
+            <div className="tool-message">You are running the latest version.</div>
+          )}
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section-title">
             <span>Under the hood</span>
             <span className="settings-hint">Bundled and ready.</span>
           </div>
@@ -372,7 +490,7 @@ export function SettingsModal() {
         <section className="settings-section settings-about">
           <div className="settings-section-title">
             <span>About</span>
-            <span className="settings-hint">Personal, local, and a little bit snake.</span>
+            <span className="settings-hint">Small, local, and yours.</span>
           </div>
           <div className="about-card">
             <div className="about-mark">
@@ -381,8 +499,8 @@ export function SettingsModal() {
             <div>
               <strong>Downy Downloader</strong>
               <p>
-                A cozy YouTube downloader with a snake-powered token economy. Your wallet and queue live
-                on this Mac — no accounts, no analytics.
+                A small YouTube downloader with a token wallet. Your queue and downloads live on this
+                Mac — no accounts, no analytics.
               </p>
               <div className="about-links">
                 <button

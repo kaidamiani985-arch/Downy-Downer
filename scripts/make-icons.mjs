@@ -34,28 +34,29 @@ const iconSvg = `
 const dmgSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="660" height="420" viewBox="0 0 660 420">
   <defs>
-    <radialGradient id="warm" cx="0.18" cy="0.15" r="0.65">
-      <stop offset="0" stop-color="#FFC300" stop-opacity="0.11"/>
+    <radialGradient id="warm" cx="0.2" cy="0.05" r="0.8">
+      <stop offset="0" stop-color="#FFC300" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#FFC300" stop-opacity="0.04"/>
       <stop offset="1" stop-color="#FFC300" stop-opacity="0"/>
     </radialGradient>
     <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.1" fill="#FFFFFF" opacity="0.055"/>
+      <circle cx="2" cy="2" r="1.1" fill="#141414" opacity="0.05"/>
     </pattern>
-    <linearGradient id="line" gradientUnits="userSpaceOnUse" x1="208" y1="212" x2="462" y2="212">
-      <stop offset="0" stop-color="#FFC300" stop-opacity="0"/>
-      <stop offset="0.3" stop-color="#FFC300" stop-opacity="0.7"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.45"/>
+    <linearGradient id="line" gradientUnits="userSpaceOnUse" x1="208" y1="195" x2="462" y2="195">
+      <stop offset="0" stop-color="#C79B00" stop-opacity="0"/>
+      <stop offset="0.3" stop-color="#C79B00" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#141414" stop-opacity="0.38"/>
     </linearGradient>
   </defs>
-  <rect width="660" height="420" rx="18" fill="#0A0A0A"/>
+  <rect width="660" height="420" rx="18" fill="#F4EFE5"/>
   <rect width="660" height="420" rx="18" fill="url(#warm)"/>
   <rect width="660" height="420" rx="18" fill="url(#dots)"/>
-  <text x="330" y="58" text-anchor="middle" fill="#FFFFFF" font-family="Helvetica Neue, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">DOWNY</text>
-  <text x="330" y="82" text-anchor="middle" fill="#FFC300" font-family="Helvetica Neue, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="4">DOWNLOADER</text>
-  <line x1="208" y1="212" x2="454" y2="212" stroke="url(#line)" stroke-width="2" stroke-dasharray="7 8"/>
-  <path d="M 446 202 L 462 212 L 446 222 Z" fill="#FFFFFF" opacity="0.8"/>
-  <text x="330" y="288" text-anchor="middle" fill="#FFFFFF" font-family="Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="600">Drag into Applications</text>
-  <text x="330" y="392" text-anchor="middle" fill="#8A8A8A" font-family="Helvetica Neue, Arial, sans-serif" font-size="11">First launch: right-click the app → Open, or allow it in System Settings → Privacy &amp; Security.</text>
+  <text x="330" y="100" text-anchor="middle" fill="#141414" font-family="Helvetica Neue, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">DOWNY</text>
+  <text x="330" y="124" text-anchor="middle" fill="#A67C00" font-family="Helvetica Neue, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="4">DOWNLOADER</text>
+  <text x="330" y="170" text-anchor="middle" fill="#7D756A" font-family="Helvetica Neue, Arial, sans-serif" font-size="9.5" font-weight="600" letter-spacing="2.4">DRAG INTO APPLICATIONS</text>
+  <line x1="208" y1="195" x2="454" y2="195" stroke="url(#line)" stroke-width="2" stroke-dasharray="7 8"/>
+  <path d="M 446 185 L 462 195 L 446 205 Z" fill="#141414" opacity="0.62"/>
+  <text x="634" y="404" text-anchor="end" fill="#9A9286" font-family="Helvetica Neue, Arial, sans-serif" font-size="9">macOS 12+</text>
 </svg>
 `
 
@@ -91,12 +92,17 @@ async function makeIcon() {
 
   execFileSync('iconutil', ['-c', 'icns', iconsetDir, '-o', path.join(buildDir, 'icon.icns')])
 
-  await sharp(Buffer.from(dmgSvg), { density: 144 })
+  await sharp(Buffer.from(dmgSvg), { density: 72 })
     .resize(660, 420)
     .png()
     .toFile(path.join(buildDir, 'dmg-background.png'))
 
-  process.stdout.write('[icons] wrote build/icon.icns and build/dmg-background.png\n')
+  await sharp(Buffer.from(dmgSvg), { density: 144 })
+    .resize(1320, 840)
+    .png()
+    .toFile(path.join(buildDir, 'dmg-background@2x.png'))
+
+  process.stdout.write('[icons] wrote build/icon.icns and build/dmg-background.png (+@2x)\n')
 }
 
 makeIcon().catch((error) => {

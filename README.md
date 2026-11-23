@@ -10,7 +10,7 @@ A small, local macOS YouTube downloader. Paste a link, choose the quality, and d
 
 ## Install
 
-1. Download and open `Downy-Downloader-1.0.0-universal.dmg`.
+1. Download and open `Downy-Downloader-1.0.1-universal.dmg`.
 2. Drag **Downy Downloader** into **Applications**.
 3. The app is ad-hoc signed, not notarized with a paid Apple Developer certificate. On first launch, macOS may block it:
    - macOS 15 Sequoia or newer: **System Settings → Privacy & Security → Open Anyway**.
@@ -33,7 +33,9 @@ Requires macOS 12 Monterey or newer. The DMG is universal: native Intel and Appl
 - You start with 0 tokens. The wallet in the top-right shows your balance, and the download cost is always shown before you start.
 - If YouTube asks you to sign in, open **Settings → Under the hood → Browser cookies** and choose your browser.
 - If YouTube changes and downloads stop working, open **Settings → Under the hood → Update yt-dlp**.
+- To update the app itself, open **Settings → Updates** and click **Download & install**. Downy restarts when it is ready. The menu bar also has **Downy Downloader → Check for Updates…**.
 - To start over, open **Settings → Reset save**. This clears the queue and resets tokens to 0 while keeping your settings.
+- Automatic in-app updates start with version 1.0.1. Anyone on an older build needs to install 1.0.1 once by hand, then future updates are one click.
 
 ## What is bundled
 
@@ -63,7 +65,7 @@ npm run dist:mac
 The build produces:
 
 - `release/Downy Downloader.app` (universal)
-- `release/Downy-Downloader-1.0.0-universal.dmg`
+- `release/Downy-Downloader-1.0.1-universal.dmg`
 - `release/SHA256SUMS.txt`
 
 ### Signing
