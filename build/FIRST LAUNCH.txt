@@ -28,10 +28,9 @@ INSTALL NOTES
 
 TOKENS
 ------
-• You start with 0 download tokens.
+• The app uses download tokens.
 • Each normal download costs 5 tokens.
-• Earn tokens by playing the snake game. Each coin eaten = 1 token.
-• Each coin goes straight into your wallet.
 • A complete playlist costs ceil(5 × number of videos ÷ 2).
   Examples: 3 videos = 8 tokens, 10 videos = 25 tokens.
 • Failed or cancelled downloads refund automatically.
+• Your balance is shown in the wallet in the top-right.
