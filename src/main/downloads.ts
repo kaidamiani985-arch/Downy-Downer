@@ -255,9 +255,10 @@ export class DownloadManager {
       const startedAt = Date.now()
       const child = spawn(this.binaries.ytdlp, args, {
         cwd: batch.outputDir,
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
+        env: this.binaries.childEnv(),
         stdio: ['ignore', 'pipe', 'pipe'],
-        detached: process.platform !== 'win32'
+        detached: process.platform !== 'win32',
+        windowsHide: true
       })
       this.child = child
 
@@ -431,6 +432,18 @@ export class DownloadManager {
   private killCurrent(): void {
     const child = this.child
     if (!child || !child.pid) return
+
+    if (process.platform === 'win32') {
+      // yt-dlp spawns ffmpeg as a child; kill the whole tree so no
+      // orphaned download keeps writing after a cancel.
+      const killer = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
+        stdio: 'ignore',
+        windowsHide: true
+      })
+      killer.unref()
+      return
+    }
+
     try {
       process.kill(-child.pid, 'SIGTERM')
     } catch {

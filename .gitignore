@@ -4,6 +4,8 @@ release/
 dist/
 vendor/bin/*
 !vendor/bin/.gitkeep
+vendor/win-bin/*
+!vendor/win-bin/.gitkeep
 *.log
 *.tsbuildinfo
 .DS_Store

@@ -155,6 +155,10 @@ select {
 
 /* Topbar — permanently in the yellow world */
 
+.app-shell.is-windows .topbar {
+  padding-left: 28px;
+}
+
 .topbar {
   position: relative;
   z-index: 30;

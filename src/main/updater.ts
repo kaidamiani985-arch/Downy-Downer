@@ -77,16 +77,20 @@ export async function checkForAppUpdate(force = false): Promise<AppUpdateCheck> 
     }
 
     const assets = Array.isArray(release.assets) ? release.assets : []
-    const dmg = assets.find(
-      (asset) => asset.name.toLowerCase().endsWith('.dmg') && asset.browser_download_url.startsWith('https://')
-    )
+    const asset = assets.find((candidate) => {
+      if (!candidate.browser_download_url.startsWith('https://')) return false
+      const name = candidate.name.toLowerCase()
+      if (process.platform === 'darwin') return name.endsWith('.dmg')
+      if (process.platform === 'win32') return name.endsWith('.exe') && name.includes('windows')
+      return false
+    })
 
     const updateAvailable = compareVersions(latest, app.getVersion()) > 0
     const result: AppUpdateCheck = {
       ...base,
       latestVersion: latest,
       updateAvailable,
-      downloadUrl: dmg?.browser_download_url ?? null,
+      downloadUrl: asset?.browser_download_url ?? null,
       releaseUrl: release.html_url ?? `${RELEASES_URL}/tag/v${latest}`,
       publishedAt: release.published_at ?? undefined,
       message: updateAvailable
@@ -94,10 +98,10 @@ export async function checkForAppUpdate(force = false): Promise<AppUpdateCheck> 
         : `Downy ${app.getVersion()} is up to date.`
     }
 
-    if (updateAvailable && !dmg) {
+    if (updateAvailable && !asset) {
       result.ok = false
       result.updateAvailable = false
-      result.message = `Downy ${latest} is available, but the release has no DMG asset yet.`
+      result.message = `Downy ${latest} is available, but the release has no installer for this platform yet.`
     }
 
     return cache(result)
@@ -117,28 +121,34 @@ export async function installAppUpdate(
     return { ok: false, message: 'An update is already in progress.' }
   }
 
-  if (process.platform !== 'darwin' || !app.isPackaged) {
-    return { ok: false, message: 'Updates can only be installed from the packaged macOS app.' }
+  if (!app.isPackaged) {
+    return { ok: false, message: 'Updates can only be installed from the installed app.' }
+  }
+  if (process.platform !== 'darwin' && process.platform !== 'win32') {
+    return { ok: false, message: 'Updates are not supported on this platform yet.' }
   }
 
-  const bundle = currentAppBundle()
-  if (!bundle) {
-    return { ok: false, message: 'Downy could not find its application folder.' }
-  }
-  if (bundle.includes('/AppTranslocation/')) {
-    return {
-      ok: false,
-      message: 'macOS is running Downy from a temporary location. Move it to Applications, then try again.'
+  let bundle: string | null = null
+  if (process.platform === 'darwin') {
+    bundle = currentAppBundle()
+    if (!bundle) {
+      return { ok: false, message: 'Downy could not find its application folder.' }
     }
-  }
+    if (bundle.includes('/AppTranslocation/')) {
+      return {
+        ok: false,
+        message: 'macOS is running Downy from a temporary location. Move it to Applications, then try again.'
+      }
+    }
 
-  const parent = path.dirname(bundle)
-  try {
-    await fsp.access(parent, fs.constants.W_OK)
-  } catch {
-    return {
-      ok: false,
-      message: `Downy cannot write to ${parent}. Move the app to Applications, then try again.`
+    const parent = path.dirname(bundle)
+    try {
+      await fsp.access(parent, fs.constants.W_OK)
+    } catch {
+      return {
+        ok: false,
+        message: `Downy cannot write to ${parent}. Move the app to Applications, then try again.`
+      }
     }
   }
 
@@ -148,17 +158,21 @@ export async function installAppUpdate(
   }
 
   installing = true
-  let dmgPath: string | null = null
+  let downloadPath: string | null = null
   let mountPoint: string | null = null
 
   try {
     const downloadsDir = path.join(app.getPath('temp'), 'downy-update')
     await fsp.mkdir(downloadsDir, { recursive: true })
-    const fileName = path.basename(new URL(check.downloadUrl).pathname) || `Downy-${check.latestVersion}.dmg`
-    dmgPath = path.join(downloadsDir, fileName)
+    const urlName = path.basename(new URL(check.downloadUrl).pathname)
+    const fallbackName =
+      process.platform === 'win32'
+        ? `Downy-Downloader-${check.latestVersion}-windows-x64-setup.exe`
+        : `Downy-${check.latestVersion}.dmg`
+    downloadPath = path.join(downloadsDir, urlName || fallbackName)
 
     onProgress({ phase: 'download', percent: 0, message: `Downloading Downy ${check.latestVersion}…` })
-    await downloadFile(check.downloadUrl, dmgPath, (percent) => {
+    await downloadFile(check.downloadUrl, downloadPath, (percent) => {
       onProgress({
         phase: 'download',
         percent,
@@ -166,14 +180,26 @@ export async function installAppUpdate(
       })
     })
 
-    const stat = await fsp.stat(dmgPath)
+    const stat = await fsp.stat(downloadPath)
     if (stat.size < 20 * 1024 * 1024) {
       throw new Error('The update download looks incomplete.')
     }
 
+    if (process.platform === 'win32') {
+      onProgress({ phase: 'restart', percent: 100, message: 'Opening the Windows installer…' })
+      const installer = spawn(downloadPath, [], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: false
+      })
+      installer.unref()
+      setTimeout(() => app.quit(), 900)
+      return { ok: true, message: 'Opening the Windows installer.' }
+    }
+
     mountPoint = await fsp.mkdtemp(path.join(os.tmpdir(), 'downy-mount-'))
     onProgress({ phase: 'install', percent: 100, message: 'Opening the update…' })
-    await run('hdiutil', ['attach', '-nobrowse', '-readonly', '-mountpoint', mountPoint, dmgPath])
+    await run('hdiutil', ['attach', '-nobrowse', '-readonly', '-mountpoint', mountPoint, downloadPath])
 
     const appName = (await fsp.readdir(mountPoint)).find((entry) => entry.endsWith('.app'))
     if (!appName) {
@@ -192,7 +218,7 @@ export async function installAppUpdate(
 
     onProgress({ phase: 'restart', percent: 100, message: 'Restarting to finish the update…' })
 
-    const child = spawn('/bin/sh', [helper, bundle, stagedApp, dmgPath, String(process.pid), mountPoint], {
+    const child = spawn('/bin/sh', [helper, bundle!, stagedApp, downloadPath, String(process.pid), mountPoint], {
       detached: true,
       stdio: 'ignore'
     })

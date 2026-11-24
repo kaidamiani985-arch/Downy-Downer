@@ -17,6 +17,10 @@ const isDev = Boolean(process.env.ELECTRON_RENDERER_URL)
 app.setName('Downy Downloader')
 app.name = 'Downy Downloader'
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.kaidamiani.downydownloader')
+}
+
 if (!app.isPackaged) {
   app.commandLine.appendSwitch('remote-debugging-port', '9333')
   app.commandLine.appendSwitch('remote-allow-origins', '*')
@@ -75,14 +79,16 @@ if (!gotLock) {
 }
 
 async function bootstrap(): Promise<void> {
-  app.setAboutPanelOptions({
-    applicationName: 'Downy Downloader',
-    applicationVersion: app.getVersion(),
-    version: app.getVersion(),
-    copyright: 'Copyright © 2026 Kai Damiani',
-    credits:
-      'A small, local YouTube downloader with a token wallet.\n\nBundled tools: yt-dlp, Deno, FFmpeg and FFprobe. See the licenses folder for their notices.'
-  })
+  if (process.platform === 'darwin') {
+    app.setAboutPanelOptions({
+      applicationName: 'Downy Downloader',
+      applicationVersion: app.getVersion(),
+      version: app.getVersion(),
+      copyright: 'Copyright © 2026 Kai Damiani',
+      credits:
+        'A small, local YouTube downloader with a token wallet.\n\nBundled tools: yt-dlp, Deno, FFmpeg and FFprobe. See the licenses folder for their notices.'
+    })
+  }
 
   if (isDev && app.dock) {
     const devIcon = path.join(process.cwd(), 'build', 'icon.png')
@@ -165,6 +171,7 @@ function createWindow(): BrowserWindow {
   const width = Math.min(1240, Math.max(900, workArea.width - 48))
   const height = Math.min(830, Math.max(580, workArea.height - 48))
 
+  const isMac = process.platform === 'darwin'
   const win = new BrowserWindow({
     width,
     height,
@@ -174,8 +181,9 @@ function createWindow(): BrowserWindow {
     show: false,
     backgroundColor: '#0a0d0b',
     title: 'Downy Downloader',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 18, y: 20 },
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 18, y: 20 } }
+      : { autoHideMenuBar: true }),
     webPreferences: {
       preload: path.join(currentDir, '../preload/index.cjs'),
       contextIsolation: true,
@@ -255,33 +263,91 @@ function buildMenu(): void {
     }
   }
 
+  const checkForUpdatesItem: Electron.MenuItemConstructorOptions = {
+    label: 'Check for Updates…',
+    click: () => {
+      void checkForUpdatesFromMenu(openSettings)
+    }
+  }
+
+  const settingsItem: Electron.MenuItemConstructorOptions = {
+    label: 'Settings…',
+    accelerator: 'CommandOrControl+,',
+    click: openSettings
+  }
+
+  const helpMenu: Electron.MenuItemConstructorOptions = {
+    role: 'help',
+    submenu: [
+      ...(process.platform === 'darwin' ? [] : [checkForUpdatesItem, { type: 'separator' as const }]),
+      {
+        label: 'yt-dlp on GitHub',
+        click: () => {
+          void shell.openExternal('https://github.com/yt-dlp/yt-dlp')
+        }
+      },
+      {
+        label: 'Show Data Folder',
+        click: () => {
+          void shell.openPath(app.getPath('userData'))
+        }
+      },
+      {
+        label: 'Show Licenses',
+        click: () => {
+          const licenses = app.isPackaged
+            ? path.join(process.resourcesPath, 'licenses')
+            : path.join(process.cwd(), 'vendor', 'licenses')
+          void shell.openPath(licenses)
+        }
+      },
+      ...(process.platform === 'darwin'
+        ? []
+        : ([
+            { type: 'separator' },
+            {
+              label: 'About Downy Downloader',
+              click: () => {
+                void showMessage({
+                  type: 'info',
+                  title: 'About Downy Downloader',
+                  message: `Downy Downloader ${app.getVersion()}`,
+                  detail:
+                    'A small, local YouTube downloader with a token wallet.\n\nBundled tools: yt-dlp, Deno, FFmpeg and FFprobe.'
+                })
+              }
+            }
+          ] as Electron.MenuItemConstructorOptions[]))
+    ]
+  }
+
   const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: app.name,
-      submenu: [
-        { role: 'about' },
-        {
-          label: 'Check for Updates…',
-          click: () => {
-            void checkForUpdatesFromMenu(openSettings)
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Settings…',
-          accelerator: 'CommandOrControl+,',
-          click: openSettings
-        },
-        { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' }
-      ]
-    },
+    ...(process.platform === 'darwin'
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              checkForUpdatesItem,
+              { type: 'separator' },
+              settingsItem,
+              { type: 'separator' },
+              { role: 'services' },
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { role: 'unhide' },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          } as Electron.MenuItemConstructorOptions
+        ]
+      : [
+          {
+            label: 'File',
+            submenu: [settingsItem, { type: 'separator' }, { role: 'quit' }]
+          } as Electron.MenuItemConstructorOptions
+        ]),
     { role: 'editMenu' },
     {
       label: 'View',
@@ -297,32 +363,7 @@ function buildMenu(): void {
       ]
     },
     { role: 'windowMenu' },
-    {
-      role: 'help',
-      submenu: [
-        {
-          label: 'yt-dlp on GitHub',
-          click: () => {
-            void shell.openExternal('https://github.com/yt-dlp/yt-dlp')
-          }
-        },
-        {
-          label: 'Show Data Folder',
-          click: () => {
-            void shell.openPath(app.getPath('userData'))
-          }
-        },
-        {
-          label: 'Show Licenses',
-          click: () => {
-            const licenses = app.isPackaged
-              ? path.join(process.resourcesPath, 'licenses')
-              : path.join(process.cwd(), 'vendor', 'licenses')
-            void shell.openPath(licenses)
-          }
-        }
-      ]
-    }
+    helpMenu
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

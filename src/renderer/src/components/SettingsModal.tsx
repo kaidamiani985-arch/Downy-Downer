@@ -37,6 +37,10 @@ export function SettingsModal() {
   const [toolAction, setToolAction] = useState<'check' | 'update' | null>(null)
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
+  const isWindows = window.downy.platform === 'win32'
+  const cookieOptions = isWindows
+    ? COOKIE_OPTIONS.filter((option) => option.value !== 'safari')
+    : COOKIE_OPTIONS
   const [appUpdate, setAppUpdate] = useState<AppUpdateCheck | null>(null)
   const [appChecking, setAppChecking] = useState(false)
   const [appInstalling, setAppInstalling] = useState(false)
@@ -382,7 +386,10 @@ export function SettingsModal() {
               <div className="update-card-copy">
                 <strong>Version {appUpdate.latestVersion} is ready</strong>
                 <span>
-                  {appProgress?.message ?? 'Download it here and Downy will restart when it is ready.'}
+                  {appProgress?.message ??
+                    (isWindows
+                      ? 'Download it here and the Windows installer will open.'
+                      : 'Download it here and Downy will restart when it is ready.')}
                 </span>
                 {appProgress?.phase === 'download' && (
                   <div className="update-progress">
@@ -475,13 +482,15 @@ export function SettingsModal() {
             <div className="settings-label">
               <strong>Browser cookies</strong>
               <span>
-                Only needed if YouTube asks you to sign in. Safari may require Full Disk Access.
+                {isWindows
+                  ? 'Only needed if YouTube asks you to sign in.'
+                  : 'Only needed if YouTube asks you to sign in. Safari may require Full Disk Access.'}
               </span>
             </div>
             <SelectField
               ariaLabel="Browser cookie source"
               value={settings.cookiesBrowser}
-              options={COOKIE_OPTIONS}
+              options={cookieOptions}
               onChange={(cookiesBrowser) => updateSettings({ cookiesBrowser })}
             />
           </div>
@@ -499,8 +508,8 @@ export function SettingsModal() {
             <div>
               <strong>Downy Downloader</strong>
               <p>
-                A small YouTube downloader with a token wallet. Your queue and downloads live on this
-                Mac — no accounts, no analytics.
+                A small YouTube downloader with a token wallet. Your queue and downloads live on
+                your computer — no accounts, no analytics.
               </p>
               <div className="about-links">
                 <button

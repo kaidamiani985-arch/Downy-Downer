@@ -1,0 +1,28 @@
+appId: com.kaidamiani.downydownloader
+productName: Downy Downloader
+copyright: Copyright © 2026 Kai Damiani
+directories:
+  output: release/win-build
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+asar: true
+npmRebuild: false
+extraResources:
+  - from: vendor/win-bin
+    to: bin
+    filter:
+      - "**/*"
+  - from: vendor/licenses
+    to: licenses
+win:
+  target:
+    - target: dir
+      arch:
+        - x64
+  icon: build/icon.ico
+  signAndEditExecutable: false
+  requestedExecutionLevel: asInvoker
+  artifactName: "Downy-Downloader-${version}-windows-${arch}.${ext}"
+publish: null

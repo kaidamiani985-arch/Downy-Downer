@@ -10,6 +10,7 @@ function subscribe<T>(channel: string, callback: (payload: T) => void): () => vo
 }
 
 const api: DownyApi = {
+  platform: process.platform,
   getState: () => ipcRenderer.invoke(CHANNELS.getState),
   addUrl: (url: string) => ipcRenderer.invoke(CHANNELS.addUrl, url),
   updateItem: (id, patch) => ipcRenderer.invoke(CHANNELS.updateItem, id, patch),

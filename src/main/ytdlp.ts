@@ -67,7 +67,7 @@ export class YtDlpService {
     }
     args.push(parsed.canonicalUrl)
 
-    const result = await runCapture(this.binaries.ytdlp, args, 180_000)
+    const result = await runCapture(this.binaries.ytdlp, args, 180_000, this.binaries.childEnv())
     if (result.timedOut) {
       throw new Error('Timed out while reading that link from YouTube. Try again.')
     }
@@ -184,7 +184,7 @@ export class YtDlpService {
 
   private baseArgs(): string[] {
     const settings = this.getSettings()
-    const args = ['--js-runtimes', `deno:${this.binaries.deno}`]
+    const args = ['--js-runtimes', 'deno']
     this.addCookieArgs(args, settings)
     return args
   }
@@ -334,11 +334,17 @@ export function friendlyError(result: { stderr: string; stdout: string; code: nu
   return `${fallback}${result.code !== null ? ` (yt-dlp exited with code ${result.code})` : ''}`
 }
 
-export function runCapture(binary: string, args: string[], timeoutMs: number): Promise<CaptureResult> {
+export function runCapture(
+  binary: string,
+  args: string[],
+  timeoutMs: number,
+  env?: NodeJS.ProcessEnv
+): Promise<CaptureResult> {
   return new Promise((resolve) => {
     const child = spawn(binary, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, PYTHONUNBUFFERED: '1' }
+      env: env ?? { ...process.env, PYTHONUNBUFFERED: '1' },
+      windowsHide: true
     })
 
     let stdout = ''

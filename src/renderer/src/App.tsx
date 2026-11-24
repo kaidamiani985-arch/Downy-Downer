@@ -19,6 +19,7 @@ export default function App() {
   const closeSnake = useAppStore((state) => state.closeSnake)
   const snapshot = useAppStore((state) => state.snapshot)
   const hasQueue = (snapshot?.queue.length ?? 0) > 0
+  const isWindows = /Windows/i.test(navigator.userAgent)
 
   const bootAt = useRef(performance.now())
   const [splash, setSplash] = useState<'visible' | 'leaving' | 'done'>('visible')
@@ -55,7 +56,11 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell ${hasQueue ? 'has-queue' : 'is-empty'} ${reveal ? 'is-ready' : ''}`}>
+    <div
+      className={`app-shell ${hasQueue ? 'has-queue' : 'is-empty'} ${reveal ? 'is-ready' : ''} ${
+        isWindows ? 'is-windows' : ''
+      }`}
+    >
       <div className="ambient ambient-one" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
 

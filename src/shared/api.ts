@@ -17,6 +17,7 @@ import type {
 } from './types'
 
 export interface DownyApi {
+  platform: string
   getState(): Promise<AppSnapshot>
   addUrl(url: string): Promise<AddUrlResult>
   updateItem(id: string, patch: ItemOptionsPatch): Promise<ActionResult>

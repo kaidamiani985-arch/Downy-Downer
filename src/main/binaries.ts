@@ -7,6 +7,8 @@ import type { ToolsInfo, ToolVersions, UpdateCheck } from '../shared/types'
 
 const execFileAsync = promisify(execFile)
 
+const isWindows = process.platform === 'win32'
+const exeSuffix = isWindows ? '.exe' : ''
 const YTDLP_RELEASE_API = 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest'
 
 export class BinaryManager {
@@ -17,24 +19,31 @@ export class BinaryManager {
   constructor(userDataDir: string) {
     this.sourceDir = app.isPackaged
       ? path.join(process.resourcesPath, 'bin')
-      : path.join(process.cwd(), 'vendor', 'bin')
+      : path.join(process.cwd(), 'vendor', isWindows ? 'win-bin' : 'bin')
     this.binDir = path.join(userDataDir, 'bin')
   }
 
   get ytdlp(): string {
-    return path.join(this.binDir, 'yt-dlp')
+    return path.join(this.binDir, `yt-dlp${exeSuffix}`)
   }
 
   get deno(): string {
-    return path.join(this.binDir, 'deno')
+    return path.join(this.binDir, `deno${exeSuffix}`)
   }
 
   get ffmpeg(): string {
-    return path.join(this.binDir, 'ffmpeg')
+    return path.join(this.binDir, `ffmpeg${exeSuffix}`)
   }
 
   get ffprobe(): string {
-    return path.join(this.binDir, 'ffprobe')
+    return path.join(this.binDir, `ffprobe${exeSuffix}`)
+  }
+
+  childEnv(): NodeJS.ProcessEnv {
+    const env: NodeJS.ProcessEnv = { ...process.env, PYTHONUNBUFFERED: '1' }
+    const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+    env[pathKey] = `${this.binDir}${path.delimiter}${env[pathKey] ?? ''}`
+    return env
   }
 
   install(): void {
@@ -46,10 +55,10 @@ export class BinaryManager {
 
     const archSuffix = process.arch === 'arm64' ? 'arm64' : 'x64'
     const copies: Array<[string, string]> = [
-      [path.join(this.sourceDir, 'yt-dlp'), this.ytdlp],
-      [path.join(this.sourceDir, `deno-${archSuffix}`), this.deno],
-      [path.join(this.sourceDir, `ffmpeg-${archSuffix}`), this.ffmpeg],
-      [path.join(this.sourceDir, `ffprobe-${archSuffix}`), this.ffprobe]
+      [path.join(this.sourceDir, `yt-dlp${exeSuffix}`), this.ytdlp],
+      [path.join(this.sourceDir, `deno-${archSuffix}${exeSuffix}`), this.deno],
+      [path.join(this.sourceDir, `ffmpeg-${archSuffix}${exeSuffix}`), this.ffmpeg],
+      [path.join(this.sourceDir, `ffprobe-${archSuffix}${exeSuffix}`), this.ffprobe]
     ]
 
     for (const [source, destination] of copies) {
@@ -59,7 +68,7 @@ export class BinaryManager {
       if (!fs.existsSync(destination)) {
         fs.copyFileSync(source, destination)
       }
-      fs.chmodSync(destination, 0o755)
+      if (!isWindows) fs.chmodSync(destination, 0o755)
       this.removeQuarantine(destination)
     }
 
@@ -70,6 +79,7 @@ export class BinaryManager {
   }
 
   private removeQuarantine(file: string): void {
+    if (isWindows) return
     try {
       execFileSyncQuiet('/usr/bin/xattr', ['-d', 'com.apple.quarantine', file])
     } catch {
@@ -120,7 +130,7 @@ export class BinaryManager {
       const response = await fetch(YTDLP_RELEASE_API, {
         headers: {
           Accept: 'application/vnd.github+json',
-          'User-Agent': 'Downy-Downloader/1.0'
+          'User-Agent': `Downy-Downloader/${app.getVersion()}`
         }
       })
       if (!response.ok) {
@@ -152,7 +162,8 @@ export class BinaryManager {
       const result = await execFileAsync(this.ytdlp, ['-U'], {
         cwd: this.binDir,
         timeout: 180_000,
-        maxBuffer: 20 * 1024 * 1024
+        maxBuffer: 20 * 1024 * 1024,
+        windowsHide: true
       })
       const output = `${result.stdout}\n${result.stderr}`.trim()
       this.versionCache = null
@@ -180,7 +191,11 @@ export class BinaryManager {
   }
 
   private async runVersion(binary: string, args: string[]): Promise<string> {
-    const result = await execFileAsync(binary, args, { timeout: 15_000, maxBuffer: 2 * 1024 * 1024 })
+    const result = await execFileAsync(binary, args, {
+      timeout: 15_000,
+      maxBuffer: 2 * 1024 * 1024,
+      windowsHide: true
+    })
     return `${result.stdout}${result.stderr}`
   }
 }
